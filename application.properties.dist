@@ -1,0 +1,17 @@
+#Parametros microservicio
+aplicacion.nombre: Ms Comp Sales System
+server.port=${port:1600}
+path.webservice=sales
+
+#Parametros de base postgres
+sales.system.datasource.jdbc-url=jdbc:postgresql://localhost:5433/db_sales_system?escapeSyntaxCallMode=callIfNoReturn
+sales.system.datasource.username=db_usr_admin
+sales.system.datasource.password=secret
+spring.datasource.hikari.idle-timeout=300000
+spring.datasource.hikari.connection-timeout=60000
+spring.datasource.hikari.maximum-pool-size=200
+spring.datasource.hikari.minimum-idle=20
+spring.datasource.hikari.max-lifetime=600000
+
+# error handling
+server.error.include-stacktrace: never 

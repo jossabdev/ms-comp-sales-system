@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="DEBUG"  monitorInterval="10">
+    <Properties>
+        <Property name="baseDir">C:\Users\Joshua\Repositories\ms-comp-sales-system\logs</Property>
+        <!--ruta produccion: /procesos/gsioper/logs/components/geolocalizadorEAR
+        ruta desarrollo: C:\Users\Desarrollo\Documents\eclipse-workspace\log\Geolocalizacion-->
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L-[%X{sid}]- %m%n</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+        
+        <Routing name="Routing">
+            <Routes >             
+                <Route>
+                    <RollingFile name="SalesSystem" 
+                        filename="${baseDir}/ms-comp-sales-system.log"
+                        filePattern="${baseDir}/ms-comp-sales-system-%d{yyyyMMdd}.log.gz">
+                        <LevelRangeFilter minLevel="FATAL" maxLevel="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+                        <PatternLayout pattern="${LOG_PATTERN}"/>
+                        <CronTriggeringPolicy schedule="0 0 0 * * ?"/>                    
+                    </RollingFile>
+                </Route>
+            </Routes>
+        </Routing>  
+    </Appenders>
+    
+    <Loggers>        
+        <Root level="DEBUG" includeLocation="true">
+            <appender-ref ref="Routing"/>
+        </Root>
+    </Loggers> 
+</Configuration>
