@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import io.jscode.microservice.dto.InfoVentaCabDTO;
+import io.jscode.microservice.service.GestionVentaService;
 import io.jscode.microservice.service.InfoVentaCabService;
+import io.jscode.microservice.service.impl.GestionVentaServiceImpl;
 import io.jscode.microservice.service.impl.InfoVentaCabServiceImpl;
 import io.jscode.microservice.util.InfoVentaCabValidator;
 import io.jscode.util.ExcepcionGenerica;
@@ -35,15 +37,19 @@ import io.jscode.util.ResponseListGenerico;
 public class InfoVentaCabController {
 	
 	@Autowired
-	private InfoVentaCabService infoVentaService;
+	InfoVentaCabService infoVentaService;
 	
 	@Autowired
 	InfoVentaCabValidator infoVentaCabValidator;
 	
 	@Autowired
+	GestionVentaService gestionVentaService;
+	
+	@Autowired
 	private BeanFactory factory;
 	
 	private String infoVentaCabServiceImpl = "InfoVentaCabServiceImpl";
+	private String gestionVentaServiceImpl = "GestionVentaServiceImpl";
 	
 	static final Logger log = LogManager.getLogger(InfoVentaCabController.class);
 	
@@ -72,7 +78,11 @@ public class InfoVentaCabController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaCabController - obtenerVentaPorId: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			
+			if(e.getErrorCode().equals(404))
+				throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+			else
+				throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		return response;
 	}
@@ -81,15 +91,19 @@ public class InfoVentaCabController {
 	@ResponseStatus(code = HttpStatus.CREATED)	
 	public ResponseEntity<ResponseGenerico<?>> guardarVenta(@RequestHeader Map<String, String> headers, @RequestBody InfoVentaCabDTO request)  {
 		URI uri;
-		infoVentaService = (InfoVentaCabServiceImpl) factory.getBean(infoVentaCabServiceImpl);
+		gestionVentaService = (GestionVentaServiceImpl) factory.getBean(gestionVentaServiceImpl);
 		try {
 			infoVentaCabValidator.validarGuardarVenta(request, headers);
-			InfoVentaCabDTO ventaGuardada = infoVentaService.guardarVenta(request);
-			uri = URI.create("/ventas/" + ventaGuardada.getIdVenta());
+			Long idVenta = gestionVentaService.proceRegistrarVenta(request);
+			uri = URI.create("/ventas/" + idVenta);
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaCabController - guardarVenta: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			
+			if(e.getErrorCode().equals(404))
+				throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+			else
+				throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		
 		return ResponseEntity				
@@ -107,21 +121,30 @@ public class InfoVentaCabController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaCabController - actualizarVenta: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			
+			if(e.getErrorCode().equals(404))
+				throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+			else
+				throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		return new ResponseGenerico<>();
 	}
 	
 	@DeleteMapping(path = "eliminarVenta", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(code = HttpStatus.OK)
-	public ResponseGenerico<?> eliminarVenta(@RequestBody InfoVentaCabDTO request)  {
+	public ResponseGenerico<?> eliminarVenta(@RequestHeader Map<String, String> headers, @RequestBody InfoVentaCabDTO request)  {
 		infoVentaService = (InfoVentaCabServiceImpl) factory.getBean(infoVentaCabServiceImpl);
 		try {
-			infoVentaService.eliminarVenta(request);
+			InfoVentaCabDTO venta = infoVentaCabValidator.validarEliminarVentaCab(request, headers);
+			infoVentaService.eliminarVenta(venta);
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaCabController - eliminarVenta: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			if(e.getErrorCode().equals(404)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND , e.getErrorMessage(), e);
+			}else {
+				throw new ResponseStatusException(HttpStatus.CONFLICT , e.getErrorMessage(), e);
+			}
 		}
 		return new ResponseGenerico<>();
 	}
@@ -150,7 +173,7 @@ public class InfoVentaCabController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaCabController - eliminarVentaPorId: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
 		}
 		return new ResponseGenerico<>();
 	}

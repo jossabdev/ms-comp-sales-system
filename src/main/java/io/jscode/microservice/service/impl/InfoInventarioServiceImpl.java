@@ -43,7 +43,12 @@ public class InfoInventarioServiceImpl implements InfoInventarioService {
 	@Override
 	public InfoInventarioDTO guardarInventario(InfoInventarioDTO request) throws ExcepcionGenerica {
 		InfoInventario inventario = salesUtils.mapper(request, InfoInventario.class);
-		InfoInventario inventarioGuardado = infoInventarioService.save(inventario);
+		InfoInventario inventarioGuardado;
+		try {
+			inventarioGuardado = infoInventarioService.save(inventario);
+		}catch(Exception e) {
+			throw new ExcepcionGenerica( "Ha ocurrido un error al guardar el inventario: " + e.getMessage());
+		}
 		return salesUtils.mapper(inventarioGuardado, InfoInventarioDTO.class);
 	}
 
@@ -70,10 +75,19 @@ public class InfoInventarioServiceImpl implements InfoInventarioService {
 
 	@Override
 	public void eliminarInventarioPorId(Long id) throws ExcepcionGenerica {
-		// Se realiza eliminado lógico
-		InfoInventarioDTO inventario = new InfoInventarioDTO(); 
-		inventario.setIdInventario(id);
-		eliminarInventario(inventario);
+		try{
+			// se consulta producto 
+			InfoInventario inventarioExistente = infoInventarioService.getById(id);
+			
+			if(inventarioExistente.getEstado().equals(Constantes.ESTADO_INACTIVO)) {
+				throw new ExcepcionGenerica("Not found");
+			}
+			
+		}catch(Exception e) {
+			throw new ExcepcionGenerica("El inventario ingresado no existe. Detalle error: "+e.getMessage(), 404);
+		}
+		
+		infoInventarioService.deleteById(id);
 	}
 
 	@Override
@@ -82,5 +96,5 @@ public class InfoInventarioServiceImpl implements InfoInventarioService {
 		InfoInventario inventarioEncontrado = infoInventarioService.getBy(inventario);
 		return salesUtils.mapper(inventarioEncontrado, InfoInventarioDTO.class);
 	}
-
+	
 }

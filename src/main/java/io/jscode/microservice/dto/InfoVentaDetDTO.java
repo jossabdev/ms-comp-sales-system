@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
@@ -17,8 +17,8 @@ public class InfoVentaDetDTO {
 	private Long idVentaDet;
 	
 	@JsonProperty("venta")
-	@JsonAlias("venta")	
-	@JsonIgnore
+	@JsonAlias("venta")
+	@JsonIgnoreProperties(value = {"detalleVenta"}, allowSetters = true)
 	private InfoVentaCabDTO venta;
 	
 	@JsonProperty("producto")

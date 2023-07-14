@@ -2,6 +2,7 @@ package io.jscode.microservice.util;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import io.jscode.microservice.dto.InfoInventarioDTO;
 import io.jscode.microservice.service.InfoInventarioService;
 import io.jscode.microservice.service.impl.InfoInventarioServiceImpl;
+import io.jscode.util.Constantes;
 import io.jscode.util.ExcepcionGenerica;
 import io.jscode.util.SalesUtils;
 
@@ -49,17 +51,25 @@ public class InfoInventarioValidator {
 		}
 		
 		// validacion stock inicial
-		if(request.getStockInicial() == null || request.getStockInicial().equals("")) {
+		if(request.getStockInicial() == null) {
 			inventarioResultante.setStockInicial(inventarioExistente.getStockInicial());
 		}else {
 			inventarioResultante.setStockInicial(request.getStockInicial());
 		}
 		
+		Integer cantidadIngresados = 0;
 		// validacion cantidad ingresados
 		if(request.getCantidadIngresados() == null) {
 			inventarioResultante.setCantidadIngresados(inventarioExistente.getCantidadIngresados());
 		}else {
-			inventarioResultante.setCantidadIngresados(request.getCantidadIngresados());
+			cantidadIngresados = request.getCantidadIngresados();
+			
+			if(cantidadIngresados > 0) {
+				Integer sumaCantidadIngresados = cantidadIngresados + inventarioExistente.getCantidadIngresados();
+				inventarioResultante.setCantidadIngresados(sumaCantidadIngresados);
+			}else {
+				inventarioResultante.setCantidadIngresados(inventarioExistente.getCantidadIngresados());
+			}
 		}
 		
 		// validacion cantidad vendidos
@@ -71,9 +81,25 @@ public class InfoInventarioValidator {
 		
 		// validacion stock total
 		if(request.getStockTotal() == null ) {
-			inventarioResultante.setStockTotal(inventarioExistente.getStockTotal());
+			// si stock total llega nulo, se valida que haya cantidad ingresados para sumarlo al stock existente
+			if(cantidadIngresados > 0) {
+				Integer sumaStockTotal = inventarioExistente.getStockTotal() + cantidadIngresados;
+				inventarioResultante.setStockTotal(sumaStockTotal);
+			}else {
+				inventarioResultante.setStockTotal(inventarioExistente.getStockTotal());
+			}
 		}else {
-			inventarioResultante.setStockTotal(request.getStockTotal());
+			if(cantidadIngresados > 0 ) {
+				Integer sumaStockTotal = inventarioExistente.getStockTotal() + cantidadIngresados;
+				if(!sumaStockTotal.equals(request.getStockTotal())) {
+					throw new ExcepcionGenerica("El valor del stockTotal no coincide con la sumatoria entre la cantidad ingresada y el stock actual");
+				}else {
+					inventarioResultante.setStockTotal(request.getStockTotal());
+				}
+			}else {
+				inventarioResultante.setStockTotal(request.getStockTotal());
+			}
+			
 		}
 						
 		// validacion estado
@@ -135,5 +161,40 @@ public class InfoInventarioValidator {
 		if(request.getIpCreacion() == null) {
 			request.setIpCreacion(salesUtils.getClientIp());
 		}
+	}
+	
+	public InfoInventarioDTO validarEliminarInventario(InfoInventarioDTO request, Map<String, String> headers) throws ExcepcionGenerica {
+		
+		if(request.getIdInventario() == null && request.getProducto() == null) {
+			throw new ExcepcionGenerica("El parametro idInventario o producto es requerido");
+		}
+	
+		if(request.getEstado() == null || request.getEstado().isBlank()) {
+			request.setEstado(Constantes.ESTADO_ACTIVO);
+		}
+		
+		// se consulta producto por filtro
+		InfoInventarioService infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceimpl);
+		InfoInventarioDTO inventarioExistente;
+		try {
+			inventarioExistente = infoInventarioService.obtenerInventarioPor(request);
+			
+			inventarioExistente.setFeUltMod(LocalDateTime.now());
+
+			if(request.getUsrUltMod() == null || request.getUsrUltMod().isBlank()) {
+				String usrUltMod = headers.get("user");
+				
+				if(usrUltMod == null || usrUltMod.isBlank()) {
+					throw new ExcepcionGenerica("El parametro header user es requerido");
+				}
+				inventarioExistente.setUsrUltMod(usrUltMod);
+			}
+			inventarioExistente.setIpUltMod(salesUtils.getClientIp());
+			
+		}catch(NoSuchElementException e) {
+			e.printStackTrace();
+			throw new ExcepcionGenerica("El inventario ingresado no existe. Detalle de error: " + e.getMessage(), 404);
+		}
+		return inventarioExistente;
 	}
 }

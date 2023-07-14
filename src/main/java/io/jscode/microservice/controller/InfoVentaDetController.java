@@ -71,7 +71,10 @@ public class InfoVentaDetController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaDetController - obtenerDetalleVentaPorId: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			if(e.getErrorCode().equals(404))
+				throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+			else
+				throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		return response;
 	}
@@ -88,7 +91,11 @@ public class InfoVentaDetController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaDetController - guardarDetalleVenta: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			
+			if(e.getErrorCode().equals(404))
+				throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+			else
+				throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		
 		return ResponseEntity				
@@ -106,22 +113,30 @@ public class InfoVentaDetController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaDetController - actualizarDetalleVenta: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			
+			if(e.getErrorCode().equals(404))
+				throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+			else
+				throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		return new ResponseGenerico<>();
 	}
 	
 	@DeleteMapping(path = "eliminarDetalleVenta", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(code = HttpStatus.OK)
-	public ResponseGenerico<?> eliminarDetalleVenta(@RequestBody InfoVentaDetDTO request)  {
+	public ResponseGenerico<?> eliminarDetalleVenta(@RequestHeader Map<String, String> headers, @RequestBody InfoVentaDetDTO request)  {
 		infoVentaDetService = (InfoVentaDetServiceImpl) factory.getBean(infoVentaDetServiceImpl);
 		try {
-			
-			infoVentaDetService.eliminarDetalleVenta(request);
+			InfoVentaDetDTO detalleVenta = infoVentaDetValidator.validarEliminarVentaDet(request, headers);
+			infoVentaDetService.eliminarDetalleVenta(detalleVenta);
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaDetController - eliminarDetalleVenta: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			if(e.getErrorCode().equals(404)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND , e.getErrorMessage(), e);
+			}else {
+				throw new ResponseStatusException(HttpStatus.CONFLICT , e.getErrorMessage(), e);
+			}
 		}
 		return new ResponseGenerico<>();
 	}
@@ -150,7 +165,7 @@ public class InfoVentaDetController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoVentaDetController - eliminarDetalleVentaPorId: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
 		}
 		return new ResponseGenerico<>();
 	}

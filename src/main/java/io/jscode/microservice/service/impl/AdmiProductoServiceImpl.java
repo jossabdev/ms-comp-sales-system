@@ -81,9 +81,9 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 			AdmiProducto productoExistente = admiProductoService.getById(id);
 			
 			if(productoExistente.getEstado().equals(Constantes.ESTADO_INACTIVO)) {
-				throw new ExcepcionGenerica("");
+				throw new ExcepcionGenerica("Not found");
 			}
-		
+			
 		}catch(Exception e) {
 			throw new ExcepcionGenerica("El producto ingresado no existe. Detalle error: "+e.getMessage(), 404);
 		}

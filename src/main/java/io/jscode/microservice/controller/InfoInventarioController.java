@@ -117,14 +117,19 @@ public class InfoInventarioController {
 	
 	@DeleteMapping(path = "eliminarInventario", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(code = HttpStatus.OK)
-	public ResponseGenerico<?> eliminarInventario(@RequestBody InfoInventarioDTO request)  {
+	public ResponseGenerico<?> eliminarInventario(@RequestHeader Map<String, String> headers, @RequestBody InfoInventarioDTO request)  {
 		infoInventarioService = (InfoInventarioServiceImpl) factory.getBean(infoInventarioServiceImpl);
 		try {
-			infoInventarioService.eliminarInventario(request);
+			InfoInventarioDTO inventario = infoInventarioValidator.validarEliminarInventario(request, headers);
+			infoInventarioService.eliminarInventario(inventario);
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoInventarioController - eliminarInventario: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			if(e.getErrorCode().equals(404)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND , e.getErrorMessage(), e);
+			}else {
+				throw new ResponseStatusException(HttpStatus.CONFLICT , e.getErrorMessage(), e);
+			}
 		}
 		return new ResponseGenerico<>();
 	}
@@ -153,7 +158,7 @@ public class InfoInventarioController {
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoInventarioController - eliminarInventario: {}", e.getMessage());
 			e.printStackTrace();
-			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
 		}
 		return new ResponseGenerico<>();
 	}

@@ -2,6 +2,7 @@ package io.jscode.microservice.util;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import io.jscode.microservice.service.InfoVentaCabService;
 import io.jscode.microservice.service.impl.AdmiProductoServiceImpl;
 import io.jscode.microservice.service.impl.InfoInventarioServiceImpl;
 import io.jscode.microservice.service.impl.InfoVentaCabServiceImpl;
+import io.jscode.util.Constantes;
 import io.jscode.util.ExcepcionGenerica;
 import io.jscode.util.SalesUtils;
 
@@ -166,29 +168,59 @@ public class InfoVentaCabValidator {
 			
 			// se valida existencia del producto
 			AdmiProductoDTO productoRequest  = detalle.getProducto();
-			AdmiProductoService admiProductoService = (AdmiProductoServiceImpl) beanFactory.getBean(admiProductoServiceimpl);
-			AdmiProductoDTO productoExistente = admiProductoService.obtenerProductoPor(productoRequest);
 			
-			if(productoExistente == null) {
-				throw new ExcepcionGenerica("El producto no existe");
+			if(productoRequest.getEstado() == null || productoRequest.getEstado().isBlank()|| !productoRequest.getEstado().equals(Constantes.ESTADO_ACTIVO)) {
+				productoRequest.setEstado(Constantes.ESTADO_ACTIVO);
 			}
+			
+			AdmiProductoService admiProductoService = (AdmiProductoServiceImpl) beanFactory.getBean(admiProductoServiceimpl);
+			AdmiProductoDTO productoExistente;
+			try {
+				// se recupera el producto
+				productoExistente = admiProductoService.obtenerProductoPor(productoRequest);
+				
+			}catch(Exception e) {
+				throw new ExcepcionGenerica("El producto no existe. Detalle del error: "+ e.getMessage(), 404);
+			}
+			
 			detalle.setProducto(productoExistente);
 			
 			// se valida existencia del inventario del producto
 			InfoInventarioDTO inventarioRequest = new InfoInventarioDTO();
-			inventarioRequest.setProducto(productoExistente);			
+			inventarioRequest.setProducto(productoExistente);	
+			inventarioRequest.setEstado(Constantes.ESTADO_ACTIVO);
 			InfoInventarioService infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceImpl);
-			InfoInventarioDTO inventarioExistente = infoInventarioService.obtenerInventarioPor(inventarioRequest);
+			InfoInventarioDTO inventarioExistente;
 			
-			if(inventarioExistente == null) {
-				throw new ExcepcionGenerica("No existe inventario para el producto " + productoExistente.getNombreProducto());
+			try {
+				inventarioExistente = infoInventarioService.obtenerInventarioPor(inventarioRequest);
+				
+			}catch(Exception e) {
+				throw new ExcepcionGenerica("Error en obtener inventario para el producto "+ productoExistente.getNombreProducto() + ". Detalle del error: "+ e.getMessage(), 409);
 			}
 			
 			// se valida que stock del inventario no sea cero o menor a la cantidad de la venta
 			Integer stock = inventarioExistente.getStockTotal();
 			
 			if(stock.intValue() <= 0 || stock.intValue() < detalle.getCantidad()) {
-				throw new ExcepcionGenerica("No se puede vender el producto " + productoExistente.getNombreProducto() + " debido a que no hay stock");
+				throw new ExcepcionGenerica("No se puede vender el producto " + productoExistente.getNombreProducto() + " debido a que no hay stock", 409);
+			}
+			
+			if (detalle.getUsrCreacion() == null || detalle.getUsrCreacion().isBlank()) {
+				String usrCreacion = headers.get("user");
+				
+				if(usrCreacion == null || usrCreacion.isBlank()) {
+					throw new ExcepcionGenerica("El parametro header user es requerido");
+				}
+				detalle.setUsrCreacion(usrCreacion);
+			}
+			
+			if(detalle.getFeCreacion() == null) {
+				detalle.setFeCreacion(LocalDateTime.now());
+			}
+			
+			if(detalle.getIpCreacion() == null) {
+				detalle.setIpCreacion(salesUtils.getClientIp());
 			}
 		}
 				
@@ -212,5 +244,40 @@ public class InfoVentaCabValidator {
 		if(request.getIpCreacion() == null) {
 			request.setIpCreacion(salesUtils.getClientIp());
 		}
+	}
+	
+	public InfoVentaCabDTO validarEliminarVentaCab(InfoVentaCabDTO request, Map<String, String> headers) throws ExcepcionGenerica {
+		
+		if(request.getIdVenta() == null) {
+			throw new ExcepcionGenerica("El parametro idVenta es requerido");
+		}
+	
+		if(request.getEstado() == null || request.getEstado().isBlank()) {
+			request.setEstado(Constantes.ESTADO_ACTIVO);
+		}
+		
+		// se consulta venta por filtro
+		InfoVentaCabService infoVentaCabService = (InfoVentaCabServiceImpl) beanFactory.getBean(infoVentaCabServiceimpl);
+		InfoVentaCabDTO ventaExistente;
+		try {
+			ventaExistente = infoVentaCabService.obtenerVentaPorId(request.getIdVenta());
+			
+			ventaExistente.setFeUltMod(LocalDateTime.now());
+
+			if(request.getUsrUltMod() == null || request.getUsrUltMod().isBlank()) {
+				String usrUltMod = headers.get("user");
+				
+				if(usrUltMod == null || usrUltMod.isBlank()) {
+					throw new ExcepcionGenerica("El parametro header user es requerido");
+				}
+				ventaExistente.setUsrUltMod(usrUltMod);
+			}
+			ventaExistente.setIpUltMod(salesUtils.getClientIp());
+			
+		}catch(NoSuchElementException e) {
+			e.printStackTrace();
+			throw new ExcepcionGenerica("La venta no existe. Detalle de error: " + e.getMessage(), 404);
+		}
+		return ventaExistente;
 	}
 }

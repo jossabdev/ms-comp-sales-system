@@ -1,6 +1,7 @@
 package io.jscode.microservice.service.impl;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,13 @@ public class InfoVentaCabServiceImpl implements InfoVentaCabService {
 
 	@Override
 	public InfoVentaCabDTO obtenerVentaPorId(Long id) throws ExcepcionGenerica {
-		InfoVentaCab venta = infoVentaService.getById(id);
+		InfoVentaCab venta;
+		try {
+			venta = infoVentaService.getById(id);	
+		}catch(NoSuchElementException e) {
+			throw new ExcepcionGenerica("La venta con id "+ id + " no existe. Detalle de error: "+ e.getMessage(), 404);
+		}
+				
 		return salesUtils.mapper(venta, InfoVentaCabDTO.class);
 	}
 
@@ -51,7 +58,12 @@ public class InfoVentaCabServiceImpl implements InfoVentaCabService {
 	public InfoVentaCabDTO guardarVenta(InfoVentaCabDTO request) throws ExcepcionGenerica {
 		InfoVentaCab venta = salesUtils.mapper(request, InfoVentaCab.class);
 		//guardamos la venta
-		InfoVentaCab ventaGuardada = infoVentaService.save(venta);		
+		InfoVentaCab ventaGuardada;
+		try {
+			ventaGuardada = infoVentaService.save(venta);	
+		}catch(Exception e) {
+			throw new ExcepcionGenerica( "Ha ocurrido un error al guardar la venta: " + e.getMessage());
+		}
 		//actualizamos inventario del producto vendido
 		restarInventarioPorVenta(request);
 				
@@ -80,9 +92,19 @@ public class InfoVentaCabServiceImpl implements InfoVentaCabService {
 
 	@Override
 	public void eliminarVentaPorId(Long id) throws ExcepcionGenerica {
-		InfoVentaCabDTO venta = new InfoVentaCabDTO();
-		venta.setIdVenta(id);
-		eliminarVenta(venta);
+		try{
+			// se consulta venta 
+			InfoVentaCab ventaExistente = infoVentaService.getById(id);
+			
+			if(ventaExistente.getEstado().equals(Constantes.ESTADO_INACTIVO)) {
+				throw new ExcepcionGenerica("Not found");
+			}
+			
+		}catch(Exception e) {
+			throw new ExcepcionGenerica("La venta ingresada no existe. Detalle error: "+e.getMessage(), 404);
+		}
+		
+		infoVentaService.deleteById(id);
 	}
 	
 	private void restarInventarioPorVenta(InfoVentaCabDTO venta) throws ExcepcionGenerica {
@@ -93,10 +115,16 @@ public class InfoVentaCabServiceImpl implements InfoVentaCabService {
 			InfoInventarioDTO inventarioRequest = new InfoInventarioDTO();
 			AdmiProductoDTO producto = detalle.getProducto();
 			inventarioRequest.setProducto(producto);
-			
+			inventarioRequest.setEstado(Constantes.ESTADO_ACTIVO);
 			// se consulta el inventario del producto
 			infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceImpl);
-			InfoInventarioDTO inventarioExistente = infoInventarioService.obtenerInventarioPor(inventarioRequest);		
+			
+			InfoInventarioDTO inventarioExistente;
+			try {
+				inventarioExistente = infoInventarioService.obtenerInventarioPor(inventarioRequest);		
+			}catch(Exception e) {
+				throw new ExcepcionGenerica("Error en obtener inventario para el producto "+ producto.getNombreProducto() + ". Detalle del error: "+ e.getMessage(), 409);
+			}
 			
 			Integer stock = inventarioExistente.getStockTotal();
 			

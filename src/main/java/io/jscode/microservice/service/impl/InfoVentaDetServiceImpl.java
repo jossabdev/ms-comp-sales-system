@@ -30,14 +30,26 @@ public class InfoVentaDetServiceImpl implements InfoVentaDetService {
 
 	@Override
 	public InfoVentaDetDTO obtenerDetalleVentaPorId(Long id) throws ExcepcionGenerica {
-		InfoVentaDet detalleVenta = infoVentaDetService.getById(id);
+		InfoVentaDet detalleVenta ;
+		try {
+			detalleVenta = infoVentaDetService.getById(id);	
+		}catch(Exception e) {
+			throw new ExcepcionGenerica("El detalle venta con id "+ id + " no existe. Detalle de error: "+ e.getMessage(), 404);
+		}
+		
 		return salesUtils.mapper(detalleVenta, InfoVentaDetDTO.class);
 	}
 
 	@Override
 	public InfoVentaDetDTO guardarDetalleVenta(InfoVentaDetDTO request) throws ExcepcionGenerica {
 		InfoVentaDet detalleVenta = salesUtils.mapper(request, InfoVentaDet.class);
-		InfoVentaDet detalleVentaGuardado = infoVentaDetService.save(detalleVenta);
+		InfoVentaDet detalleVentaGuardado;
+		try {
+			detalleVentaGuardado = infoVentaDetService.save(detalleVenta);
+		}catch(Exception e) {
+			throw new ExcepcionGenerica( "Ha ocurrido un error al guardar el detalle de venta: " + e.getMessage());
+		}
+		
 		return salesUtils.mapper(detalleVentaGuardado, InfoVentaDetDTO.class);
 	}
 
@@ -56,9 +68,18 @@ public class InfoVentaDetServiceImpl implements InfoVentaDetService {
 
 	@Override
 	public void eliminarDetalleVentaPorId(Long id) throws ExcepcionGenerica {
-		InfoVentaDetDTO detalleVenta = new InfoVentaDetDTO();
-		detalleVenta.setIdVentaDet(id);
-		eliminarDetalleVenta(detalleVenta);
+		try{
+			// se consulta detalle venta 
+			InfoVentaDet detalleVentaExistente = infoVentaDetService.getById(id);
+			
+			if(detalleVentaExistente.getEstado().equals(Constantes.ESTADO_INACTIVO)) {
+				throw new ExcepcionGenerica("Not found");
+			}
+			
+		}catch(Exception e) {
+			throw new ExcepcionGenerica("El detalle de venta ingresado no existe. Detalle error: "+e.getMessage(), 404);
+		}
+		infoVentaDetService.deleteById(id); 
 	}
 
 	@Override
@@ -67,6 +88,13 @@ public class InfoVentaDetServiceImpl implements InfoVentaDetService {
 		InfoVentaDet detalleVenta = salesUtils.mapper(request, InfoVentaDet.class);
 		List<InfoVentaDet> detallesVenta = infoVentaDetService.getAllBy(detalleVenta);
 		return salesUtils.mapperList(detallesVenta, InfoVentaDetDTO.class);
+	}
+
+	@Override
+	public InfoVentaDetDTO obtenerDetalleVentaPor(InfoVentaDetDTO request) throws ExcepcionGenerica {
+		InfoVentaDet detalleVenta = salesUtils.mapper(request, InfoVentaDet.class);
+		InfoVentaDet detalleVentaEncontrado = infoVentaDetService.getBy(detalleVenta);		
+		return salesUtils.mapper(detalleVentaEncontrado, InfoVentaDetDTO.class);
 	}
 
 }

@@ -81,7 +81,7 @@ public class AdmiCategoriaServiceImpl implements AdmiCategoriaService{
 			// se cosulta la categoria
 			AdmiCategoria categoriaExistente = admiCategoriaService.getById(id);
 			if(categoriaExistente.getEstado().equals(Constantes.ESTADO_INACTIVO)) {
-				throw new ExcepcionGenerica("");
+				throw new ExcepcionGenerica("Not Found");
 			}
 		}catch(Exception e) {
 			throw new ExcepcionGenerica("La categoria ingresada no existe. Detalle error: "+e.getMessage(), 404);

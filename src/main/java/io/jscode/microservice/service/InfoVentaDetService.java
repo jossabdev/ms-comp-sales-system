@@ -8,6 +8,7 @@ import io.jscode.util.ExcepcionGenerica;
 public interface InfoVentaDetService {
 	List<InfoVentaDetDTO> obtenerTodosLosDetallesDeLasVentas() throws ExcepcionGenerica;
 	InfoVentaDetDTO obtenerDetalleVentaPorId(Long id) throws ExcepcionGenerica;
+	InfoVentaDetDTO obtenerDetalleVentaPor(InfoVentaDetDTO request) throws ExcepcionGenerica;
 	InfoVentaDetDTO guardarDetalleVenta(InfoVentaDetDTO request) throws ExcepcionGenerica;
 	void actualizarDetalleVenta(InfoVentaDetDTO request) throws ExcepcionGenerica;
 	void eliminarDetalleVenta(InfoVentaDetDTO request) throws ExcepcionGenerica;

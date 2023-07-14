@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
@@ -76,6 +77,7 @@ public class InfoVentaCabDTO {
 	private String ipUltMod;
 	
 	@JsonProperty("detalleVenta")
+	@JsonIgnoreProperties(value = {"venta"} , allowSetters = true)
 	private List<InfoVentaDetDTO> detalleVenta;
 	
 }
