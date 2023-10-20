@@ -1,11 +1,14 @@
 package io.jscode.microservice.service.impl;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import io.jscode.db.entity.AdmiCategoria;
 import io.jscode.db.entity.AdmiProducto;
 import io.jscode.db.service.DBAdmiProductoService;
 import io.jscode.microservice.dto.AdmiProductoDTO;
@@ -25,7 +28,12 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 	
 	@Override
 	public List<AdmiProductoDTO> obtenerTodosLosProductos() throws ExcepcionGenerica {
-		List<AdmiProducto> productos = admiProductoService.getAll();
+		List<AdmiProducto> productos = admiProductoService.getAll()
+		                .stream()
+		                .filter(productoTmp -> !productoTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(AdmiProducto::getIdProducto).thenComparing(AdmiProducto::getEstado))
+						.collect(Collectors.toList());
+						
 		return salesUtils.mapperList(productos, AdmiProductoDTO.class);
 	}
 
@@ -70,7 +78,12 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 	@Override
 	public List<AdmiProductoDTO> obtenerTodosLosProductosPor(AdmiProductoDTO request) throws ExcepcionGenerica {
 		AdmiProducto producto = salesUtils.mapper(request, AdmiProducto.class);
-		List<AdmiProducto> productosFitrados = admiProductoService.getAllBy(producto);
+		List<AdmiProducto> productosFitrados = admiProductoService.getAllBy(producto)
+		                .stream()
+		                .filter(productoTmp -> !productoTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(AdmiProducto::getIdProducto).thenComparing(AdmiProducto::getEstado))
+						.collect(Collectors.toList());
+
 		return salesUtils.mapperList(productosFitrados, AdmiProductoDTO.class);
 	}
 

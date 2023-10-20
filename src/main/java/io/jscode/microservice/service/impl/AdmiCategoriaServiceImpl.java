@@ -1,6 +1,8 @@
 package io.jscode.microservice.service.impl;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,12 @@ public class AdmiCategoriaServiceImpl implements AdmiCategoriaService{
 	
 	@Override
 	public List<AdmiCategoriaDTO> obtenerTodasLasCategorias() throws ExcepcionGenerica{
-		List<AdmiCategoria> categorias = admiCategoriaService.getAll();			
+		List<AdmiCategoria> categorias = admiCategoriaService.getAll()
+		                .stream()
+						.filter(categoria -> !categoria.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(AdmiCategoria::getIdCategoria).thenComparing(AdmiCategoria::getEstado))
+						.collect(Collectors.toList());			
+
 		return salesUtils.mapperList(categorias, AdmiCategoriaDTO.class);
 	}
 
@@ -71,7 +78,12 @@ public class AdmiCategoriaServiceImpl implements AdmiCategoriaService{
 	@Override
 	public List<AdmiCategoriaDTO> obtenerTodasLasCategoriasPor(AdmiCategoriaDTO request) throws ExcepcionGenerica {
 		AdmiCategoria categoria = salesUtils.mapper(request, AdmiCategoria.class);
-		List<AdmiCategoria> categoriasFiltradas = admiCategoriaService.getAllBy(categoria); 
+		List<AdmiCategoria> categoriasFiltradas = admiCategoriaService.getAllBy(categoria)
+		                .stream()
+		                .filter(categoriaTmp -> !categoriaTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(AdmiCategoria::getIdCategoria).thenComparing(AdmiCategoria::getEstado))
+						.collect(Collectors.toList()); 
+
 		return salesUtils.mapperList(categoriasFiltradas, AdmiCategoriaDTO.class);
 	}
 
