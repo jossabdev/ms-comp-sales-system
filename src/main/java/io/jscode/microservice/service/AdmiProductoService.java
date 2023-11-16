@@ -14,4 +14,6 @@ public interface AdmiProductoService {
 	void eliminarProducto(AdmiProductoDTO request) throws ExcepcionGenerica;
 	void eliminarProductoPorId(Long id) throws ExcepcionGenerica;
 	List<AdmiProductoDTO> obtenerTodosLosProductosPor(AdmiProductoDTO request) throws ExcepcionGenerica;
+	List<AdmiProductoDTO> obtenerTodosLosProductosEnStock() throws ExcepcionGenerica;
+	AdmiProductoDTO obtenerProductoEnStockPorCodigoBarras(AdmiProductoDTO request) throws ExcepcionGenerica;
 }

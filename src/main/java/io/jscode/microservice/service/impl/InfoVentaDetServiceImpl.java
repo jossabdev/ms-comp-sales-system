@@ -1,6 +1,8 @@
 package io.jscode.microservice.service.impl;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,7 +26,12 @@ public class InfoVentaDetServiceImpl implements InfoVentaDetService {
 	
 	@Override
 	public List<InfoVentaDetDTO> obtenerTodosLosDetallesDeLasVentas() throws ExcepcionGenerica {
-		List<InfoVentaDet> detallesVentas = infoVentaDetService.getAll();
+		List<InfoVentaDet> detallesVentas = infoVentaDetService.getAll()
+		                .stream()
+		                .filter(detalleVenta -> !detalleVenta.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(InfoVentaDet::getIdVentaDet).reversed())
+						.collect(Collectors.toList());
+
 		return salesUtils.mapperList(detallesVentas, InfoVentaDetDTO.class);
 	}
 
@@ -86,7 +93,12 @@ public class InfoVentaDetServiceImpl implements InfoVentaDetService {
 	public List<InfoVentaDetDTO> obtenerTodosLosDetallesDeLasVentasPor(InfoVentaDetDTO request)
 			throws ExcepcionGenerica {
 		InfoVentaDet detalleVenta = salesUtils.mapper(request, InfoVentaDet.class);
-		List<InfoVentaDet> detallesVenta = infoVentaDetService.getAllBy(detalleVenta);
+		List<InfoVentaDet> detallesVenta = infoVentaDetService.getAllBy(detalleVenta)
+		                .stream()
+		                .filter(detalleVentaTmp -> !detalleVentaTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(InfoVentaDet::getIdVentaDet))
+						.collect(Collectors.toList());
+
 		return salesUtils.mapperList(detallesVenta, InfoVentaDetDTO.class);
 	}
 

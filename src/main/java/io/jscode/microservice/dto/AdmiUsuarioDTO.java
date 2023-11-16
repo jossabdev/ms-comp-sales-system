@@ -23,6 +23,10 @@ public class AdmiUsuarioDTO {
 	@JsonAlias("usuario")
 	private String usuario;
 	
+	@JsonProperty("nombre")
+	@JsonAlias("nombre")
+	private String nombre;
+
 	@JsonProperty("email")
 	@JsonAlias("email")
 	private String email;

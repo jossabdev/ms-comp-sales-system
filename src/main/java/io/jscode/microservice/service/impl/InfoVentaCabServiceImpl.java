@@ -1,11 +1,14 @@
 package io.jscode.microservice.service.impl;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 import io.jscode.db.entity.InfoVentaCab;
 import io.jscode.db.service.DBInfoVentaCabService;
@@ -38,7 +41,12 @@ public class InfoVentaCabServiceImpl implements InfoVentaCabService {
 	
 	@Override
 	public List<InfoVentaCabDTO> obtenerTodasLasVentas() throws ExcepcionGenerica {
-		List<InfoVentaCab> ventas = infoVentaService.getAll(); 
+		List<InfoVentaCab> ventas = infoVentaService.getAll()
+		                .stream()
+		                .filter(ventasTmp -> !ventasTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(InfoVentaCab::getFechaVenta).reversed())
+						.collect(Collectors.toList());
+						
 		return salesUtils.mapperList(ventas, InfoVentaCabDTO.class);
 	}
 
@@ -86,7 +94,12 @@ public class InfoVentaCabServiceImpl implements InfoVentaCabService {
 	@Override
 	public List<InfoVentaCabDTO> obtenerTodasLasVentasPor(InfoVentaCabDTO request) throws ExcepcionGenerica {
 		InfoVentaCab venta = salesUtils.mapper(request, InfoVentaCab.class);
-		List<InfoVentaCab> ventasFiltradas = infoVentaService.getAllBy(venta);
+		List<InfoVentaCab> ventasFiltradas = infoVentaService.getAllBy(venta)
+		                .stream()
+		                .filter(ventas -> !ventas.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(InfoVentaCab::getIdVenta).reversed())
+						.collect(Collectors.toList());
+
 		return salesUtils.mapperList(ventasFiltradas, InfoVentaCabDTO.class);
 	}
 

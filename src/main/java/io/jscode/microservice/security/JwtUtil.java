@@ -28,10 +28,10 @@ public class JwtUtil {
         algorithm = Algorithm.HMAC256(secretKey);
 
         return JWT.create()
-                 .withSubject(username)
+                 .withSubject(username)                 
                  .withIssuer(issuer)
                  .withIssuedAt(Instant.now())
-                 .withExpiresAt(Instant.now().plus(expirationDays, ChronoUnit.DAYS))
+                 .withExpiresAt(Instant.now().plus(expirationDays, ChronoUnit.DAYS))                 
                  .sign(algorithm);
     }
 

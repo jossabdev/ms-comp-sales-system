@@ -1,6 +1,5 @@
 package io.jscode.microservice.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,7 +20,6 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
-    @Autowired
     public AuthController(AuthenticationManager authenticationManager, JwtUtil jwtUtil){
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;

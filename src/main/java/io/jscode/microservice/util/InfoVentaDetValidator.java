@@ -1,7 +1,6 @@
 package io.jscode.microservice.util;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -9,11 +8,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import io.jscode.microservice.dto.InfoVentaCabDTO;
 import io.jscode.microservice.dto.InfoVentaDetDTO;
-import io.jscode.microservice.service.InfoVentaCabService;
 import io.jscode.microservice.service.InfoVentaDetService;
-import io.jscode.microservice.service.impl.InfoVentaCabServiceImpl;
 import io.jscode.microservice.service.impl.InfoVentaDetServiceImpl;
 import io.jscode.util.Constantes;
 import io.jscode.util.ExcepcionGenerica;

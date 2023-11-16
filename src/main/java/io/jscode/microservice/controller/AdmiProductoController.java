@@ -171,4 +171,36 @@ public class AdmiProductoController {
 		}
 		return new ResponseGenerico<>();
 	}
+
+	@GetMapping(path = "obtenerTodosLosProductosEnStock", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(code = HttpStatus.OK)
+	public ResponseListGenerico<AdmiProductoDTO> obtenerTodosLosProductosEnStock() {
+		ResponseListGenerico<AdmiProductoDTO> response = new ResponseListGenerico<>();
+		admiProductoService = (AdmiProductoServiceImpl) factory.getBean(admiProductoServiceImpl);
+		try {
+			response.setData(admiProductoService.obtenerTodosLosProductosEnStock());
+		} catch (ExcepcionGenerica e) {
+			log.error("AdmiProductoController - obtenerTodosLosProductosEnStock: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+		}
+		return response;
+	}
+
+	@PostMapping(path = "obtenerProductoEnStockPorCodigoBarras", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(code = HttpStatus.OK)
+	public ResponseGenerico<AdmiProductoDTO> obtenerProductoEnStockPorCodigoBarras(@RequestBody AdmiProductoDTO request) {
+		ResponseGenerico<AdmiProductoDTO> response = new ResponseGenerico<>();
+		admiProductoService = (AdmiProductoServiceImpl) factory.getBean(admiProductoServiceImpl);
+		try {
+			response.setData(admiProductoService.obtenerProductoEnStockPorCodigoBarras(request));
+		} catch (ExcepcionGenerica e) {
+			if(e.getErrorCode().equals(404)) {
+				throw new ResponseStatusException(HttpStatus.NOT_FOUND , e.getErrorMessage(), e);
+			}else {
+				throw new ResponseStatusException(HttpStatus.CONFLICT , e.getErrorMessage(), e);
+			}
+		}
+		return response;
+	}
 }

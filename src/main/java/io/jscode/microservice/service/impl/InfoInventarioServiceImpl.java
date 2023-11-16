@@ -1,7 +1,9 @@
 package io.jscode.microservice.service.impl;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,12 @@ public class InfoInventarioServiceImpl implements InfoInventarioService {
 	
 	@Override
 	public List<InfoInventarioDTO> obtenerTodosLosInventarios() throws ExcepcionGenerica {
-		List<InfoInventario> inventarios = infoInventarioService.getAll();
+		List<InfoInventario> inventarios = infoInventarioService.getAll()
+		                .stream()
+		                .filter(inventario -> !inventario.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(InfoInventario::getIdInventario).thenComparing(InfoInventario::getEstado))
+						.collect(Collectors.toList());
+
 		return salesUtils.mapperList(inventarios, InfoInventarioDTO.class);
 	}
 
@@ -53,9 +60,10 @@ public class InfoInventarioServiceImpl implements InfoInventarioService {
 	}
 
 	@Override
-	public void actualizarInventario(InfoInventarioDTO request) throws ExcepcionGenerica {		
+	public InfoInventarioDTO actualizarInventario(InfoInventarioDTO request) throws ExcepcionGenerica {		
 		InfoInventario inventario = salesUtils.mapper(request, InfoInventario.class);
-		infoInventarioService.update(inventario);
+		InfoInventario inventarioActualizado = infoInventarioService.update(inventario);
+		return salesUtils.mapper(inventarioActualizado, InfoInventarioDTO.class);
 	}
 
 	@Override
@@ -69,7 +77,12 @@ public class InfoInventarioServiceImpl implements InfoInventarioService {
 	@Override
 	public List<InfoInventarioDTO> obtenerTodosLosInventariosPor(InfoInventarioDTO request) throws ExcepcionGenerica {
 		InfoInventario inventario = salesUtils.mapper(request, InfoInventario.class);
-		List<InfoInventario> inventariosFiltrados = infoInventarioService.getAllBy(inventario);
+		List<InfoInventario> inventariosFiltrados = infoInventarioService.getAllBy(inventario)
+		                .stream()
+		                .filter(inventarioTmp -> !inventarioTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(InfoInventario::getIdInventario).thenComparing(InfoInventario::getEstado))
+						.collect(Collectors.toList());
+						
 		return salesUtils.mapperList(inventariosFiltrados, InfoInventarioDTO.class);
 	}
 

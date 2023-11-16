@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import io.jscode.microservice.dto.ConsultaVentasDTO;
+import io.jscode.microservice.dto.ConsultaVentasReqDTO;
+import io.jscode.microservice.dto.EstadisticaVentaDTO;
 import io.jscode.microservice.dto.InfoVentaCabDTO;
 import io.jscode.microservice.service.GestionVentaService;
 import io.jscode.microservice.service.InfoVentaCabService;
@@ -163,6 +166,21 @@ public class InfoVentaCabController {
 		}
 		return response;
 	}
+
+	@PostMapping(path = "consultarPorRangoFecha", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(code = HttpStatus.OK)
+	public ResponseListGenerico<InfoVentaCabDTO> obtenerTodasLasVentasPorRangoFecha(@RequestBody ConsultaVentasReqDTO request) {
+		ResponseListGenerico<InfoVentaCabDTO> response = new ResponseListGenerico<>();
+		infoVentaService = (InfoVentaCabServiceImpl) factory.getBean(infoVentaCabServiceImpl);
+		try {
+			response.setData(gestionVentaService.obtenerVentasPorRangoFecha(request));
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - obtenerTodasLasVentasPorRangoFecha: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
+		}
+		return response;
+	}
 	
 	@DeleteMapping(path = "eliminarVenta/{idVenta}")
 	@ResponseStatus(code = HttpStatus.OK)
@@ -174,6 +192,79 @@ public class InfoVentaCabController {
 			log.error("InfoVentaCabController - eliminarVentaPorId: {}", e.getMessage());
 			e.printStackTrace();
 			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+		}
+		return new ResponseGenerico<>();
+	}
+
+	@PostMapping(path = "obtenerTotalDeVentas", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseGenerico<ConsultaVentasDTO> obtenerTotalDeVentasPorRangoDeFecha(@RequestBody ConsultaVentasReqDTO request){
+		ResponseGenerico<ConsultaVentasDTO> response = new ResponseGenerico<>();
+		gestionVentaService = (GestionVentaServiceImpl) factory.getBean(gestionVentaServiceImpl);
+		try {
+			response.setData(gestionVentaService.obtenerTotalDeVentasPor(request));
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - obtenerTotalDeVentasPorRango: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+		}
+		return response;
+	}
+
+	@PostMapping(path = "obtenerProductoTop", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseGenerico<ConsultaVentasDTO> obtenerProductoTopPorRangoDeFecha(@RequestBody ConsultaVentasReqDTO request){
+		ResponseGenerico<ConsultaVentasDTO> response = new ResponseGenerico<>();
+		gestionVentaService = (GestionVentaServiceImpl) factory.getBean(gestionVentaServiceImpl);
+		try {
+			response.setData(gestionVentaService.obtenerProductoTop(request));
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - obtenerProductoTopPorRangoDeFecha: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+		}
+		return response;
+	}
+
+	@PostMapping(path = "obtenerTotalDeGanancias", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseGenerico<ConsultaVentasDTO> obtenerTotalDeGananciasPorRangoDeFecha(@RequestBody ConsultaVentasReqDTO request){
+		ResponseGenerico<ConsultaVentasDTO> response = new ResponseGenerico<>();
+		gestionVentaService = (GestionVentaServiceImpl) factory.getBean(gestionVentaServiceImpl);
+		try {
+			response.setData(gestionVentaService.obtenerTotalGananciasPor(request));
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - obtenerTotalDeVentasPorRango: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+		}
+		return response;
+	}
+
+	// obtenerTotalVentasPorCriterios: 6 meses, 30 dias, 7 dias
+	@GetMapping(path = "obtenerEstadisticasVentasPorOpcion/{opcion}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseGenerico<EstadisticaVentaDTO> obtenerEstadisticasVentas(@PathVariable Integer opcion){
+		ResponseGenerico<EstadisticaVentaDTO> response = new ResponseGenerico<>();
+
+		gestionVentaService = (GestionVentaServiceImpl) factory.getBean(gestionVentaServiceImpl);
+
+		try {
+			response.setData(gestionVentaService.obtenerEstadisticasVentasPorOpcion(opcion));
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - obtenerEstadisticasVentas: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+		}
+		return response;
+	}
+
+	@PostMapping(path = "anularVenta", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseGenerico<?> anularVenta(@RequestHeader Map<String, String> headers, @RequestBody InfoVentaCabDTO request){
+		gestionVentaService = (GestionVentaServiceImpl) factory.getBean(GestionVentaServiceImpl.class);
+		try {
+			infoVentaCabValidator.validarAnularVenta(request, headers);
+			gestionVentaService.proceAnularVenta(request);
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - anularVenta: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		return new ResponseGenerico<>();
 	}

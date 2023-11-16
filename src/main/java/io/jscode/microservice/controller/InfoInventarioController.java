@@ -102,17 +102,18 @@ public class InfoInventarioController {
 	
 	@PutMapping(path = "actualizarInventario", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(code = HttpStatus.OK)
-	public ResponseGenerico<?> actualizarInventario(@RequestHeader Map<String, String> headers, @RequestBody InfoInventarioDTO request)  {
+	public ResponseGenerico<InfoInventarioDTO> actualizarInventario(@RequestHeader Map<String, String> headers, @RequestBody InfoInventarioDTO request)  {
+		ResponseGenerico<InfoInventarioDTO> response = new ResponseGenerico<>(); 
 		infoInventarioService = (InfoInventarioServiceImpl) factory.getBean(infoInventarioServiceImpl);
 		try {
 			InfoInventarioDTO inventarioDto = infoInventarioValidator.validarActualizarInventario(request, headers);
-			infoInventarioService.actualizarInventario(inventarioDto);
+			response.setData(infoInventarioService.actualizarInventario(inventarioDto));
 		} catch (ExcepcionGenerica e) {
 			log.error("InfoInventarioController - actualizarInventario: {}", e.getMessage());
 			e.printStackTrace();
 			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
-		return new ResponseGenerico<>();
+		return response;
 	}
 	
 	@DeleteMapping(path = "eliminarInventario", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

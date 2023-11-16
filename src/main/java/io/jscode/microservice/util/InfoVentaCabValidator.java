@@ -159,9 +159,6 @@ public class InfoVentaCabValidator {
 			throw new ExcepcionGenerica("El parametro total es requerido");
 		}
 		
-		if(request.getFechaVenta() == null) {
-			throw new ExcepcionGenerica("El parametro fechaVenta es requerido");
-		}
 		
 		//validacion detalle venta		
 		for(InfoVentaDetDTO detalle : request.getDetalleVenta()) {
@@ -279,5 +276,29 @@ public class InfoVentaCabValidator {
 			throw new ExcepcionGenerica("La venta no existe. Detalle de error: " + e.getMessage(), 404);
 		}
 		return ventaExistente;
+	}
+
+	public void validarAnularVenta(InfoVentaCabDTO request, Map<String, String> headers) throws ExcepcionGenerica{
+		
+		if(request.getIdVenta() == null) {
+			throw new ExcepcionGenerica("El parametro idVenta es requerido");
+		}
+
+		if(request.getUsrCreacion() == null || request.getUsrCreacion().isBlank()) {
+			String usrCreacion = headers.get("user");
+			
+			if(usrCreacion == null || usrCreacion.isBlank()) {
+				throw new ExcepcionGenerica("El parametro header user es requerido");
+			}
+			request.setUsrCreacion(usrCreacion);
+		}
+		
+		if(request.getFeCreacion() == null) {
+			request.setFeCreacion(LocalDateTime.now());
+		}
+		
+		if(request.getIpCreacion() == null) {
+			request.setIpCreacion(salesUtils.getClientIp());
+		}
 	}
 }

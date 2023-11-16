@@ -8,9 +8,10 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import io.jscode.db.entity.AdmiCategoria;
 import io.jscode.db.entity.AdmiProducto;
+import io.jscode.db.entity.InfoInventario;
 import io.jscode.db.service.DBAdmiProductoService;
+import io.jscode.db.service.DBInfoInventarioService;
 import io.jscode.microservice.dto.AdmiProductoDTO;
 import io.jscode.microservice.service.AdmiProductoService;
 import io.jscode.util.Constantes;
@@ -22,6 +23,9 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 
 	@Autowired
 	DBAdmiProductoService admiProductoService;
+
+	@Autowired
+	DBInfoInventarioService infoInventarioService;
 
 	@Autowired
 	SalesUtils salesUtils;
@@ -106,8 +110,67 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 	@Override
 	public AdmiProductoDTO obtenerProductoPor(AdmiProductoDTO request) throws ExcepcionGenerica {
 		AdmiProducto producto = salesUtils.mapper(request, AdmiProducto.class);
-		AdmiProducto productoEncontrado = admiProductoService.getBy(producto);
+		AdmiProducto productoEncontrado = null;
+		try{
+			productoEncontrado = admiProductoService.getBy(producto);
+		}catch(NoSuchElementException e){
+			throw new ExcepcionGenerica(e.getMessage(), 404);
+		}
+		
 		return salesUtils.mapper(productoEncontrado, AdmiProductoDTO.class);
+	}
+
+	@Override
+	public List<AdmiProductoDTO> obtenerTodosLosProductosEnStock() throws ExcepcionGenerica {
+		List<AdmiProducto> productos = admiProductoService.getAll()
+		                .stream()
+		                .filter(productoTmp -> !productoTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.sorted(Comparator.comparing(AdmiProducto::getIdProducto).thenComparing(AdmiProducto::getEstado))
+						.collect(Collectors.toList());
+
+		productos.removeIf( producto -> {
+			boolean seElimina = false;
+			InfoInventario inventarioProducto = new InfoInventario();
+			inventarioProducto.setProducto(producto);
+			inventarioProducto.setEstado(Constantes.ESTADO_ACTIVO);
+			InfoInventario inventario;
+			try{
+				inventario = infoInventarioService.getBy(inventarioProducto);	
+				if(inventario.getStockTotal() == 0){
+					seElimina = true;
+				}
+			}catch(NoSuchElementException e){
+				seElimina = true;
+			}
+			return seElimina;
+		});
+
+		return salesUtils.mapperList(productos, AdmiProductoDTO.class);
+	}
+
+	@Override
+	public AdmiProductoDTO obtenerProductoEnStockPorCodigoBarras(AdmiProductoDTO request) throws ExcepcionGenerica {
+		AdmiProductoDTO productoDto = null;
+		try{
+			productoDto = this.obtenerProductoPor(request);
+		}catch(ExcepcionGenerica ex){
+			throw new ExcepcionGenerica("No existe producto con codigo de barras: "+ request.getCodigoBarras(), 404);
+		}
+		 
+		AdmiProducto producto = salesUtils.mapper(productoDto, AdmiProducto.class);
+
+		InfoInventario inventarioProducto = new InfoInventario();
+		inventarioProducto.setProducto(producto);
+		InfoInventario inventario;
+		try{
+			inventario = infoInventarioService.getBy(inventarioProducto);	
+			if(inventario.getStockTotal() == 0){
+				throw new ExcepcionGenerica("No hay stock para el producto: "+ producto.getNombreProducto(), 404);
+			}
+		}catch(NoSuchElementException e){
+			throw new ExcepcionGenerica("No existe inventario para el producto "+ producto.getNombreProducto(), 404);
+		}
+		return productoDto;
 	}
 
 }
