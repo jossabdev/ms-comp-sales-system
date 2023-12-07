@@ -12,5 +12,7 @@ public class ConsultaVentasReqDTO {
     private LocalDateTime fechaDesde;
     @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
     private LocalDateTime fechaHasta;
+
+    private String vendedor;
     
 }

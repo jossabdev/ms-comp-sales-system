@@ -268,4 +268,20 @@ public class InfoVentaCabController {
 		}
 		return new ResponseGenerico<>();
 	}
+
+	@GetMapping(path = "obtenerTotalDeInversion", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseGenerico<ConsultaVentasDTO> obtenerTotalDeInversion(){
+		ResponseGenerico<ConsultaVentasDTO> response = new ResponseGenerico<>();
+
+		gestionVentaService = (GestionVentaServiceImpl) factory.getBean(gestionVentaServiceImpl);
+
+		try {
+			response.setData(gestionVentaService.obtenerTotalInversion());
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - obtenerTotalDeInversion: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+		}
+		return response;
+	}
 }

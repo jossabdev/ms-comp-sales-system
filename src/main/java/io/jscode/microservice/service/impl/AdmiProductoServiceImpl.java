@@ -115,6 +115,8 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 			productoEncontrado = admiProductoService.getBy(producto);
 		}catch(NoSuchElementException e){
 			throw new ExcepcionGenerica(e.getMessage(), 404);
+		}catch(Exception e){
+			throw new ExcepcionGenerica(e.getMessage());
 		}
 		
 		return salesUtils.mapper(productoEncontrado, AdmiProductoDTO.class);
@@ -132,16 +134,18 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 			boolean seElimina = false;
 			InfoInventario inventarioProducto = new InfoInventario();
 			inventarioProducto.setProducto(producto);
-			inventarioProducto.setEstado(Constantes.ESTADO_ACTIVO);
+			//inventarioProducto.setEstado(Constantes.ESTADO_ACTIVO);
 			InfoInventario inventario;
 			try{
 				inventario = infoInventarioService.getBy(inventarioProducto);	
 				if(inventario.getStockTotal() == 0){
 					seElimina = true;
 				}
-			}catch(NoSuchElementException e){
+			}catch(Exception e){
 				seElimina = true;
-			}
+			}/*catch(Exception e){
+				seElimina = true;
+			}*/
 			return seElimina;
 		});
 
@@ -167,7 +171,7 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 			if(inventario.getStockTotal() == 0){
 				throw new ExcepcionGenerica("No hay stock para el producto: "+ producto.getNombreProducto(), 404);
 			}
-		}catch(NoSuchElementException e){
+		}catch(Exception e){
 			throw new ExcepcionGenerica("No existe inventario para el producto "+ producto.getNombreProducto(), 404);
 		}
 		return productoDto;

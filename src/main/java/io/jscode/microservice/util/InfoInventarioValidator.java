@@ -1,12 +1,14 @@
 package io.jscode.microservice.util;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 
 import io.jscode.microservice.dto.InfoInventarioDTO;
 import io.jscode.microservice.service.InfoInventarioService;
@@ -25,6 +27,8 @@ public class InfoInventarioValidator {
 	SalesUtils salesUtils;
 	
 	String infoInventarioServiceimpl = "InfoInventarioServiceImpl";
+
+	String admiProductoServiceImpl = "AdmiProductoServiceImpl";
 	
 	public InfoInventarioDTO validarActualizarInventario (InfoInventarioDTO request, Map<String, String> headers) throws ExcepcionGenerica {
 		InfoInventarioDTO inventarioResultante = new InfoInventarioDTO();
@@ -160,6 +164,27 @@ public class InfoInventarioValidator {
 		
 		if(request.getIpCreacion() == null) {
 			request.setIpCreacion(salesUtils.getClientIp());
+		}
+
+		// se valida que no exista otro inventario con mismo producto (mismo productoId)
+		InfoInventarioService infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceimpl);
+		
+		// se valida que exista el inventario del producto 
+		InfoInventarioDTO inventarioPorProducto = new InfoInventarioDTO();
+		inventarioPorProducto.setProducto(request.getProducto());
+		try{
+			List<InfoInventarioDTO> inventariosExistentes = infoInventarioService.obtenerTodosLosInventariosPor(inventarioPorProducto);
+
+			if(inventariosExistentes.size() > 0 ){
+				for(InfoInventarioDTO inventarioExistente: inventariosExistentes){
+					if(inventarioExistente.getIdInventario() != null && inventarioExistente.getProducto() != null && inventarioExistente.getEstado().equals("Activo")){
+						throw new ExcepcionGenerica("Inventario ya existe");
+					}
+				}			
+			}
+			
+		}catch(ExcepcionGenerica e){			
+			throw new ExcepcionGenerica("No es posible crear el inventario. Error técnico: " + e.getMessage());
 		}
 	}
 	

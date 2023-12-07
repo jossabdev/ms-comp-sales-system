@@ -15,6 +15,7 @@ import io.jscode.microservice.service.InfoInventarioService;
 import io.jscode.util.Constantes;
 import io.jscode.util.ExcepcionGenerica;
 import io.jscode.util.SalesUtils;
+import jakarta.persistence.NonUniqueResultException;
 
 @Service("InfoInventarioServiceImpl")
 public class InfoInventarioServiceImpl implements InfoInventarioService {
@@ -104,9 +105,16 @@ public class InfoInventarioServiceImpl implements InfoInventarioService {
 	}
 
 	@Override
-	public InfoInventarioDTO obtenerInventarioPor(InfoInventarioDTO request) throws ExcepcionGenerica {
+	public InfoInventarioDTO obtenerInventarioPor(InfoInventarioDTO request) throws ExcepcionGenerica{
 		InfoInventario inventario = salesUtils.mapper(request, InfoInventario.class);
-		InfoInventario inventarioEncontrado = infoInventarioService.getBy(inventario);
+		InfoInventario inventarioEncontrado = null;
+		
+		try{
+			inventarioEncontrado = infoInventarioService.getBy(inventario);
+		}catch(Exception e){
+			throw new ExcepcionGenerica(e);
+		}
+		
 		return salesUtils.mapper(inventarioEncontrado, InfoInventarioDTO.class);
 	}
 	

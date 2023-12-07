@@ -143,6 +143,16 @@ public class AdmiProductoValidator {
 		if(request.getIpCreacion() == null) {
 			request.setIpCreacion(salesUtils.getClientIp());
 		}
+
+		// validar si producto existe con mismo codigo de barras
+		AdmiProductoService admiProductoService = (AdmiProductoServiceImpl) beanFactory.getBean(admiProductoServiceimpl);
+		AdmiProductoDTO productoRequest = new AdmiProductoDTO();
+		productoRequest.setCodigoBarras(request.getCodigoBarras());
+		AdmiProductoDTO productoExistente = admiProductoService.obtenerProductoPor(productoRequest);
+		
+		if(productoExistente != null && productoExistente.getIdProducto() != null && productoExistente.getEstado().equals("Activo")) {
+			throw new ExcepcionGenerica("Ya existe producto con código de barra " + request.getCodigoBarras(), 409);
+		}
 	}
 	
 	public AdmiProductoDTO validarEliminarProducto(AdmiProductoDTO request, Map<String, String> headers) throws ExcepcionGenerica{

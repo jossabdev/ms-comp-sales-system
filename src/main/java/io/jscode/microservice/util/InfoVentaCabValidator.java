@@ -185,7 +185,7 @@ public class InfoVentaCabValidator {
 			// se valida existencia del inventario del producto
 			InfoInventarioDTO inventarioRequest = new InfoInventarioDTO();
 			inventarioRequest.setProducto(productoExistente);	
-			inventarioRequest.setEstado(Constantes.ESTADO_ACTIVO);
+			//inventarioRequest.setEstado(Constantes.ESTADO_ACTIVO);
 			InfoInventarioService infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceImpl);
 			InfoInventarioDTO inventarioExistente;
 			

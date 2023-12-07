@@ -46,7 +46,7 @@ public class AdmiUsuarioValidator {
 			usuarioResultante.setUsuario(request.getUsuario());
 		}
 
-		// validacion Usuario
+		// validacion Nombre
 		if(request.getNombre() == null || request.getNombre().isBlank()) {
 			usuarioResultante.setNombre(usuarioExistente.getNombre());
 		}else {
@@ -123,11 +123,11 @@ public class AdmiUsuarioValidator {
 			throw new ExcepcionGenerica("El parametro rol es requerido", 422);
 		}
 		
-		if(request.getEmail() == null || request.getEmail().isBlank()) {
+		/*if(request.getEmail() == null || request.getEmail().isBlank()) {
 			throw new ExcepcionGenerica("El parametro email es requerido", 422);
-		}
+		}*/
 		
-		if(request.getPassword() == null || request.getEmail().isBlank()) {
+		if(request.getPassword() == null || request.getPassword().isBlank()) {
 			throw new ExcepcionGenerica("El parametro password es requerido", 422);
 		}
 		

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import io.jscode.db.entity.AdmiProducto;
+import io.jscode.db.entity.InfoInventario;
 import io.jscode.db.entity.InfoVentaCab;
 import io.jscode.db.entity.InfoVentaDet;
 import io.jscode.db.service.DBGestionVentasService;
@@ -20,8 +21,10 @@ import io.jscode.db.service.DBInfoVentaCabService;
 import io.jscode.microservice.dto.ConsultaVentasDTO;
 import io.jscode.microservice.dto.ConsultaVentasReqDTO;
 import io.jscode.microservice.dto.EstadisticaVentaDTO;
+import io.jscode.microservice.dto.InfoInventarioDTO;
 import io.jscode.microservice.dto.InfoVentaCabDTO;
 import io.jscode.microservice.service.GestionVentaService;
+import io.jscode.microservice.service.InfoInventarioService;
 import io.jscode.util.Constantes;
 import io.jscode.util.ExcepcionGenerica;
 import io.jscode.util.SalesUtils;
@@ -37,6 +40,9 @@ public class GestionVentaServiceImpl implements GestionVentaService{
 
 	@Autowired
 	DBInfoVentaCabService infoVentaCabService;
+
+	@Autowired
+	InfoInventarioService infoInventarioService;
 	
 	@Override
 	public Long proceRegistrarVenta(InfoVentaCabDTO request) throws ExcepcionGenerica {	
@@ -212,10 +218,19 @@ public class GestionVentaServiceImpl implements GestionVentaService{
 	@Override
 	public List<InfoVentaCabDTO> obtenerVentasPorRangoFecha(ConsultaVentasReqDTO request) throws ExcepcionGenerica{
 		List<InfoVentaCab> listaVentasPorFecha = gestionVentasservice.consultarVentasPorRangoFecha(request.getFechaDesde(), request.getFechaHasta());
+		List<InfoVentaCab> listaVentasFiltrada = null;
 
-		List<InfoVentaCab> listaVentasFiltrada = listaVentasPorFecha.stream()
-								.filter(venta -> !venta.getEstado().equals(Constantes.ESTADO_ANULADO))
+		if(request.getVendedor() == null || request.getVendedor().isEmpty()){
+			listaVentasFiltrada = listaVentasPorFecha.stream()
+								//.filter(venta -> !venta.getEstado().equals(Constantes.ESTADO_ANULADO))								
 								.collect(Collectors.toList());
+		}else{
+			listaVentasFiltrada = listaVentasPorFecha.stream()
+								//.filter(venta -> !venta.getEstado().equals(Constantes.ESTADO_ANULADO))
+								.filter(venta -> venta.getVendedor().equals(request.getVendedor()))
+								.collect(Collectors.toList());
+		}
+		
 
 		return salesUtils.mapperList(listaVentasFiltrada, InfoVentaCabDTO.class);
 	}
@@ -224,5 +239,27 @@ public class GestionVentaServiceImpl implements GestionVentaService{
 	public void proceAnularVenta(InfoVentaCabDTO request) throws ExcepcionGenerica {
 		InfoVentaCab ventaCab = salesUtils.mapper(request, InfoVentaCab.class);
 		gestionVentasservice.proceAnularVenta(ventaCab);
+	}
+
+	@Override
+	public ConsultaVentasDTO obtenerTotalInversion() throws ExcepcionGenerica {
+
+		Double totalInversion = 0.0;
+		ConsultaVentasDTO consultaVenta = new ConsultaVentasDTO();
+
+		// obtengo la lista de todos los inventarios que no estén inactivos
+		List<InfoInventarioDTO> listaInventario = infoInventarioService.obtenerTodosLosInventarios()
+		                .stream()
+		                .filter(inventarioTmp -> !inventarioTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))	
+						.filter(inventarioTmp -> !inventarioTmp.getProducto().getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.filter(inventarioTmp -> inventarioTmp.getStockTotal() > 0)
+						.collect(Collectors.toList());
+
+        for (InfoInventarioDTO inventario: listaInventario){
+			Double costo = inventario.getProducto().getCosto();
+			totalInversion = totalInversion +  inventario.getStockTotal() * costo;
+		}
+		consultaVenta.setTotalInversion(totalInversion);
+		return consultaVenta;
 	}
 }
