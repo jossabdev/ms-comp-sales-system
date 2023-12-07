@@ -1,16 +1,21 @@
 package io.jscode.microservice.util;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import io.jscode.microservice.dto.AdmiProductoDTO;
+import io.jscode.microservice.dto.InfoInventarioDTO;
 import io.jscode.microservice.service.AdmiProductoService;
+import io.jscode.microservice.service.InfoInventarioService;
 import io.jscode.microservice.service.impl.AdmiProductoServiceImpl;
+import io.jscode.microservice.service.impl.InfoInventarioServiceImpl;
 import io.jscode.util.Constantes;
 import io.jscode.util.ExcepcionGenerica;
 import io.jscode.util.SalesUtils;
@@ -143,10 +148,34 @@ public class AdmiProductoValidator {
 		if(request.getIpCreacion() == null) {
 			request.setIpCreacion(salesUtils.getClientIp());
 		}
+
+		// validar si producto existe con mismo codigo de barras
+		if(!request.getCodigoBarras().isEmpty()){
+			AdmiProductoService admiProductoService = (AdmiProductoServiceImpl) beanFactory.getBean(admiProductoServiceimpl);
+			AdmiProductoDTO productoRequest = new AdmiProductoDTO();
+			productoRequest.setCodigoBarras(request.getCodigoBarras());
+			
+			List<AdmiProductoDTO> productosTmp = admiProductoService.obtenerTodosLosProductosPor(productoRequest);
+			
+			Optional<AdmiProductoDTO> productoOpt = productosTmp.stream()
+				.filter(productoTmp -> !productoTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+				.findFirst();
+			
+			if(productoOpt.isPresent()){
+				AdmiProductoDTO productoExistente = productoOpt.get();
+
+				if(productoExistente != null && productoExistente.getIdProducto() != null && (productoExistente.getEstado().equals("Activo") ||  productoExistente.getEstado().equals("Modificado"))) {
+					throw new ExcepcionGenerica("Ya existe producto con código de barra " + request.getCodigoBarras(), 409);
+				}
+			}
+		}
+		
+		
 	}
 	
 	public AdmiProductoDTO validarEliminarProducto(AdmiProductoDTO request, Map<String, String> headers) throws ExcepcionGenerica{
-		AdmiProductoService admiProductoService;		
+		AdmiProductoService admiProductoService;
+		InfoInventarioService infoInventarioService;		
 		AdmiProductoDTO productoExistente;
 		
 		if(request.getEstado() == null || request.getEstado().isBlank()) {
@@ -158,6 +187,21 @@ public class AdmiProductoValidator {
 		try {
 			productoExistente = admiProductoService.obtenerProductoPor(request);
 			
+			
+			// compruebo que el producto no tenga un inventario
+			infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(InfoInventarioServiceImpl.class);
+
+			InfoInventarioDTO inventarioRequest = new InfoInventarioDTO();
+			inventarioRequest.setProducto(productoExistente);
+			List<InfoInventarioDTO> inventariosTmp = infoInventarioService.obtenerTodosLosInventariosPor(inventarioRequest);
+			Optional<InfoInventarioDTO> inventarioOpt = inventariosTmp.stream()
+			    .filter(inventarioTmp -> !inventarioTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+			    .findFirst();
+			
+			if(inventarioOpt.isPresent()){
+				throw new ExcepcionGenerica("El producto no puede eliminarse debido a que tiene inventario");
+			}
+
 			productoExistente.setFeUltMod(LocalDateTime.now());
 
 			if(request.getUsrUltMod() == null || request.getUsrUltMod().isBlank()) {
@@ -174,6 +218,7 @@ public class AdmiProductoValidator {
 			e.printStackTrace();
 			throw new ExcepcionGenerica("El producto ingresado no existe. Detalle de error: " + e.getMessage(), 404);
 		}
+
 		
 		return productoExistente;
 	}

@@ -26,7 +26,12 @@ public class AdmiUsuarioServiceImpl implements AdmiUsuarioService {
 
 	@Override
 	public List<AdmiUsuarioDTO> obtenerTodosLosUsuarios() throws ExcepcionGenerica {
-		List<AdmiUsuario> listaUsuarios = admiUsuarioService.getAll();
+		List<AdmiUsuario> listaUsuarios = admiUsuarioService.getAll()
+								.stream()
+								.filter(usuarioTmp -> !usuarioTmp.getEstado().equals(Constantes.ESTADO_ELIMINADO))
+								.sorted(Comparator.comparing(AdmiUsuario::getIdUsuario).thenComparing(AdmiUsuario::getEstado))
+								.collect(Collectors.toList());
+
 		return salesUtils.mapperList(listaUsuarios, AdmiUsuarioDTO.class);
 	}
 

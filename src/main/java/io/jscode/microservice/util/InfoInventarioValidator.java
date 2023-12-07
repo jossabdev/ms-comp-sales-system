@@ -1,12 +1,15 @@
 package io.jscode.microservice.util;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 
 import io.jscode.microservice.dto.InfoInventarioDTO;
 import io.jscode.microservice.service.InfoInventarioService;
@@ -25,6 +28,8 @@ public class InfoInventarioValidator {
 	SalesUtils salesUtils;
 	
 	String infoInventarioServiceimpl = "InfoInventarioServiceImpl";
+
+	String admiProductoServiceImpl = "AdmiProductoServiceImpl";
 	
 	public InfoInventarioDTO validarActualizarInventario (InfoInventarioDTO request, Map<String, String> headers) throws ExcepcionGenerica {
 		InfoInventarioDTO inventarioResultante = new InfoInventarioDTO();
@@ -161,6 +166,27 @@ public class InfoInventarioValidator {
 		if(request.getIpCreacion() == null) {
 			request.setIpCreacion(salesUtils.getClientIp());
 		}
+
+		// se valida que no exista otro inventario con mismo producto (mismo productoId)
+		InfoInventarioService infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceimpl);
+		
+		// se valida que exista el inventario del producto 
+		InfoInventarioDTO inventarioPorProducto = new InfoInventarioDTO();
+		inventarioPorProducto.setProducto(request.getProducto());
+		try{
+			List<InfoInventarioDTO> inventariosExistentes = infoInventarioService.obtenerTodosLosInventariosPor(inventarioPorProducto);
+
+			if(inventariosExistentes.size() > 0 ){
+				for(InfoInventarioDTO inventarioExistente: inventariosExistentes){
+					if(inventarioExistente.getIdInventario() != null && inventarioExistente.getProducto() != null && inventarioExistente.getEstado().equals("Activo")){
+						throw new ExcepcionGenerica("Inventario ya existe");
+					}
+				}			
+			}
+			
+		}catch(ExcepcionGenerica e){			
+			throw new ExcepcionGenerica("No es posible crear el inventario. Error técnico: " + e.getMessage());
+		}
 	}
 	
 	public InfoInventarioDTO validarEliminarInventario(InfoInventarioDTO request, Map<String, String> headers) throws ExcepcionGenerica {
@@ -173,23 +199,33 @@ public class InfoInventarioValidator {
 			request.setEstado(Constantes.ESTADO_ACTIVO);
 		}
 		
-		// se consulta producto por filtro
+		// se consulta inventario por filtro
 		InfoInventarioService infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceimpl);
-		InfoInventarioDTO inventarioExistente;
+		InfoInventarioDTO inventarioExistente = new InfoInventarioDTO();
 		try {
-			inventarioExistente = infoInventarioService.obtenerInventarioPor(request);
-			
-			inventarioExistente.setFeUltMod(LocalDateTime.now());
+			InfoInventarioDTO inventarioRequest = new InfoInventarioDTO();
+			inventarioRequest.setIdInventario(request.getIdInventario());
 
-			if(request.getUsrUltMod() == null || request.getUsrUltMod().isBlank()) {
-				String usrUltMod = headers.get("user");
-				
-				if(usrUltMod == null || usrUltMod.isBlank()) {
-					throw new ExcepcionGenerica("El parametro header user es requerido");
+			List<InfoInventarioDTO> inventariosExistentes = infoInventarioService.obtenerTodosLosInventariosPor(inventarioRequest);
+			Optional<InfoInventarioDTO> inventarioOpt = inventariosExistentes.stream()
+			    .filter(inventarioTmp -> !inventarioTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+			    .findFirst();
+			
+			if(inventarioOpt.isPresent()){
+				inventarioExistente = inventarioOpt.get();
+				inventarioExistente.setFeUltMod(LocalDateTime.now());
+
+				if(request.getUsrUltMod() == null || request.getUsrUltMod().isBlank()) {
+					String usrUltMod = headers.get("user");
+					
+					if(usrUltMod == null || usrUltMod.isBlank()) {
+						throw new ExcepcionGenerica("El parametro header user es requerido");
+					}
+					inventarioExistente.setUsrUltMod(usrUltMod);
 				}
-				inventarioExistente.setUsrUltMod(usrUltMod);
+				inventarioExistente.setIpUltMod(salesUtils.getClientIp());
 			}
-			inventarioExistente.setIpUltMod(salesUtils.getClientIp());
+			
 			
 		}catch(NoSuchElementException e) {
 			e.printStackTrace();

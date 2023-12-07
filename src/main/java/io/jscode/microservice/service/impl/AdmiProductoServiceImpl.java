@@ -3,6 +3,7 @@ package io.jscode.microservice.service.impl;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,6 +116,8 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 			productoEncontrado = admiProductoService.getBy(producto);
 		}catch(NoSuchElementException e){
 			throw new ExcepcionGenerica(e.getMessage(), 404);
+		}catch(Exception e){
+			throw new ExcepcionGenerica(e.getMessage());
 		}
 		
 		return salesUtils.mapper(productoEncontrado, AdmiProductoDTO.class);
@@ -132,16 +135,25 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 			boolean seElimina = false;
 			InfoInventario inventarioProducto = new InfoInventario();
 			inventarioProducto.setProducto(producto);
-			inventarioProducto.setEstado(Constantes.ESTADO_ACTIVO);
-			InfoInventario inventario;
+			//inventarioProducto.setEstado(Constantes.ESTADO_ACTIVO);
 			try{
-				inventario = infoInventarioService.getBy(inventarioProducto);	
-				if(inventario.getStockTotal() == 0){
+				List<InfoInventario> listaInventario = infoInventarioService.getAllBy(inventarioProducto);	
+				Optional<InfoInventario> inventarioEncontrado = listaInventario.stream()
+				            .filter(inventarioTmp -> !inventarioTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+							.findFirst();
+				if(inventarioEncontrado.isPresent()){
+					if(inventarioEncontrado.get().getStockTotal() == 0){
+						seElimina = true;
+					}
+				}else{
 					seElimina = true;
 				}
-			}catch(NoSuchElementException e){
+				
+			}catch(Exception e){
 				seElimina = true;
-			}
+			}/*catch(Exception e){
+				seElimina = true;
+			}*/
 			return seElimina;
 		});
 
@@ -161,13 +173,19 @@ public class AdmiProductoServiceImpl implements AdmiProductoService {
 
 		InfoInventario inventarioProducto = new InfoInventario();
 		inventarioProducto.setProducto(producto);
-		InfoInventario inventario;
+
 		try{
-			inventario = infoInventarioService.getBy(inventarioProducto);	
-			if(inventario.getStockTotal() == 0){
-				throw new ExcepcionGenerica("No hay stock para el producto: "+ producto.getNombreProducto(), 404);
+			List<InfoInventario> listaInventario = infoInventarioService.getAllBy(inventarioProducto);	
+			Optional<InfoInventario> inventarioEncontrado = listaInventario.stream()
+						.filter(inventarioTmp -> !inventarioTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+						.findFirst();
+			if(inventarioEncontrado.isPresent()){
+				if(inventarioEncontrado.get().getStockTotal() == 0){
+					throw new ExcepcionGenerica("No hay stock para el producto: "+ producto.getNombreProducto(), 404);
+				}
 			}
-		}catch(NoSuchElementException e){
+
+		}catch(Exception e){
 			throw new ExcepcionGenerica("No existe inventario para el producto "+ producto.getNombreProducto(), 404);
 		}
 		return productoDto;

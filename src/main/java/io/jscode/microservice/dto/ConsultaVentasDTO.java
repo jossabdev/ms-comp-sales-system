@@ -12,6 +12,7 @@ public class ConsultaVentasDTO {
     private Double totalVentas;
     private Double totalGanancias;
     private String productoTop;
+    private Double totalInversion;
     private List<DetalleVenta> detalleVentas;
     private List<InfoVentaCabDTO> ultimasVentasRealizadas;
 

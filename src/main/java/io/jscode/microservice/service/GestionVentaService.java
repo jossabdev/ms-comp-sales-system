@@ -16,4 +16,5 @@ public interface GestionVentaService {
 	public ConsultaVentasDTO obtenerProductoTop(ConsultaVentasReqDTO request) throws ExcepcionGenerica;
 	public EstadisticaVentaDTO obtenerEstadisticasVentasPorOpcion(Integer opcion) throws ExcepcionGenerica;
 	public void proceAnularVenta(InfoVentaCabDTO ventaCab) throws ExcepcionGenerica;
+	public ConsultaVentasDTO obtenerTotalInversion() throws ExcepcionGenerica;
 }

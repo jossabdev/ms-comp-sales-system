@@ -1,8 +1,10 @@
 package io.jscode.microservice.util;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,9 +168,9 @@ public class InfoVentaCabValidator {
 			// se valida existencia del producto
 			AdmiProductoDTO productoRequest  = detalle.getProducto();
 			
-			if(productoRequest.getEstado() == null || productoRequest.getEstado().isBlank()|| !productoRequest.getEstado().equals(Constantes.ESTADO_ACTIVO)) {
+			/*if(productoRequest.getEstado() == null || productoRequest.getEstado().isBlank()|| !productoRequest.getEstado().equals(Constantes.ESTADO_ACTIVO)) {
 				productoRequest.setEstado(Constantes.ESTADO_ACTIVO);
-			}
+			}*/
 			
 			AdmiProductoService admiProductoService = (AdmiProductoServiceImpl) beanFactory.getBean(admiProductoServiceimpl);
 			AdmiProductoDTO productoExistente;
@@ -185,18 +187,26 @@ public class InfoVentaCabValidator {
 			// se valida existencia del inventario del producto
 			InfoInventarioDTO inventarioRequest = new InfoInventarioDTO();
 			inventarioRequest.setProducto(productoExistente);	
-			inventarioRequest.setEstado(Constantes.ESTADO_ACTIVO);
+			//inventarioRequest.setEstado(Constantes.ESTADO_ACTIVO);
 			InfoInventarioService infoInventarioService = (InfoInventarioServiceImpl) beanFactory.getBean(infoInventarioServiceImpl);
-			InfoInventarioDTO inventarioExistente;
+			InfoInventarioDTO inventarioExistente = new InfoInventarioDTO();
 			
 			try {
-				inventarioExistente = infoInventarioService.obtenerInventarioPor(inventarioRequest);
+				List<InfoInventarioDTO> listaInventariosExistente = infoInventarioService.obtenerTodosLosInventariosPor(inventarioRequest);
+				Optional<InfoInventarioDTO> inventarioExistenteTmp = listaInventariosExistente.stream()
+				    .filter(inventarioTmp -> !inventarioTmp.getEstado().equals(Constantes.ESTADO_INACTIVO))
+					.findFirst();
+
+				if(inventarioExistenteTmp.isPresent()){
+					inventarioExistente = inventarioExistenteTmp.get();
+				}else{
+					throw new ExcepcionGenerica("Inventario no encontrado");
+				}
 				
 			}catch(Exception e) {
 				throw new ExcepcionGenerica("Error en obtener inventario para el producto "+ productoExistente.getNombreProducto() + ". Detalle del error: "+ e.getMessage(), 409);
 			}
 			
-			// se valida que stock del inventario no sea cero o menor a la cantidad de la venta
 			Integer stock = inventarioExistente.getStockTotal();
 			
 			if(stock.intValue() <= 0 || stock.intValue() < detalle.getCantidad()) {
