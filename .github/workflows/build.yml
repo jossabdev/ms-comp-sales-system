@@ -1,0 +1,192 @@
+name: Dev Java Maven Build
+run-name: Action Maven Java Build - ${{ github.repository }}
+
+on:
+  pull_request:
+    branches: [ master ]
+env:
+  REGISTRY: ghcr.io
+  IMAGEN_NAME: ${{ github.repository }}
+
+jobs:
+  validation:
+        runs-on: ubuntu-latest
+        env:
+          main_commit: ""
+          head_commit: ""
+          before_head_commit: ""
+          base_commit: ""
+          count_errors: 0
+        steps:
+            - name: checkout repository
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+                ref: ${{ github.event.pull_request.head.ref }} #ref de la rama que hace el push
+            - name: Inicio Validación
+              run: echo "Se inicia el proceso de validación de la rama ${{ github.head_ref }}."            
+            - name: Information
+              run: |
+               echo "User: ${{ github.actor }}"
+               echo "Branch: ${{ github.head_ref }}"
+               echo "Repository: ${{ github.event.pull_request.head.repo.name }}"
+               mensaje=$(git log -1 --pretty=%B)
+               echo "Commit: Sha: ${{ github.event.pull_request.head.sha }}. Message: $mensaje"
+               echo "Job: ${{ github.job }}"
+               export TZ="America/Bogota"
+               fecha_actual=$(date +"%Y-%m-%d %H:%M:%S")
+               echo "Fecha: $fecha_actual"
+            - name: Validación de un solo commit
+              continue-on-error: true #si da error el step, continua al siguiente
+              run: |
+                commits=${{ github.event.pull_request.commits }}
+                if [ $commits -gt 1 ]; then
+                  echo "❌ La rama ${{ github.head_ref }} no cumple con la validación de tener un solo commit."
+                  count_error=$(($count_errors + 1))
+                  echo "count_errors=$count_error">> $GITHUB_ENV
+                  exit 1
+                else
+                  echo "✅ Validación correcta. La rama ${{ github.head_ref }} tiene un solo commit."
+                fi            
+            - name: Identificación de ramas
+              continue-on-error: true
+              run: |
+                git fetch origin master
+
+                head=$(git rev-parse HEAD)
+                echo "Rama ${{ github.head_ref }}. Commit head: $head"
+                echo "head_commit=$head" >> $GITHUB_ENV            
+
+                anterior=$(git rev-parse HEAD^)
+                echo "Rama ${{ github.head_ref }}. Commit anterior: $anterior"                
+                echo "before_head_commit=$anterior" >> $GITHUB_ENV
+
+                commit_base=$(git merge-base origin/master HEAD)
+                echo "Commit base común entre master y dev-3: $commit_base"
+                echo "base_commit=$commit_base" >> $GITHUB_ENV
+
+                main=${{ github.event.pull_request.base.sha }}
+                echo "Rama ${{ github.base_ref }}. Commit: $main"
+                echo "main_commit=$main" >> $GITHUB_ENV                
+            - name: Validación de rama Main
+              continue-on-error: true
+              run: |
+                echo "Validando que la rama ${{ github.head_ref }} esté actualizada con la rama ${{ github.base_ref }}"
+                if [ "$base_commit" != "$main_commit" ]; then
+                  echo "❌ La rama ${{ github.head_ref }} no está actualizada con ${{ github.base_ref }}"
+                  count_error=$(($count_errors + 1))
+                  echo "count_errors=$count_error">> $GITHUB_ENV
+                  exit 1
+                else
+                  echo "✅ La rama ${{ github.head_ref }} está actualizada con ${{ github.base_ref }}"
+                fi
+                if [ "$before_head_commit" != "$main_commit" ]; then
+                  echo "❌ El commit anterior de la rama ${{ github.head_ref }} no es el de la rama ${{ github.base_ref }}"
+                  count_error=$(($count_errors + 1))
+                  echo "count_errors=$count_error">> $GITHUB_ENV
+                  exit 1
+                else
+                  echo "✅ Validación con rama ${{ github.base_ref }} exitosa"
+                fi
+            - name: Validacion de errores
+              run: |
+                errors=$count_errors
+                if [ $errors -gt 0 ]; then
+                  echo "❌ Se han encontrado $errors error(es)."
+                  exit 1 #termina con error el step
+                else
+                  echo "✅ Validación de errores realizada exitosamente. No existen errores."
+                fi
+            - name: Fin Validación
+              run: echo "✅ Se finaliza correctamente el proceso de validación de la rama ${{ github.head_ref }}." 
+             
+  dev-java17-build-job:
+    runs-on: ubuntu-latest
+    needs: validation
+    steps:
+      - name: Checkout repository ${{ github.repository }}
+        uses: actions/checkout@v4
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          architecture: x64
+          cache: maven
+      - name: Configure Maven settings.xml
+        run: |
+          echo '<settings>
+                  <servers>
+                    <server>
+                      <id>github-core</id>
+                      <username>${{ github.actor }}</username>
+                      <password>${{ secrets.GH_PACKAGES_TOKEN }}</password>
+                    </server>
+                    <server>
+                      <id>github-db</id>
+                      <username>${{ github.actor }}</username>
+                      <password>${{ secrets.GH_PACKAGES_TOKEN }}</password>
+                    </server>
+                    <server>
+                      <id>github</id>
+                      <username>${{ github.actor }}</username>
+                      <password>${{ secrets.GH_PACKAGES_TOKEN }}</password>
+                    </server>
+                  </servers>
+                </settings>' > $HOME/.m2/settings.xml
+      - name: Build with Maven
+        run: mvn clean install -DskipTests
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ms-comp-sales-system-jar
+          path: target/*jar
+
+  dev-publish-docker-image:
+    runs-on: ubuntu-latest
+    needs: dev-java17-build-job
+    
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download artifactory
+        uses: actions/download-artifact@v4
+        with:
+          name: ms-comp-sales-system-jar
+          path: target
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      #- name: Extract metadata (tags, labels) for docker
+      #  id: meta
+      #  uses: docker/metadata-action@v3
+      #  with:
+      #    images: ${{ env.REGISTRY }}/${{ env.IMAGEN_NAME }}
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          #tags: ${{ steps.meta.outputs.tags }}
+          #labels: ${{ steps.meta.outputs.labels }}
+          tags: ghcr.io/${{ github.repository_owner }}/ms-comp-sales-system:latest
+
+      #- name: Generate artifact attestation
+      #  uses: actions/attest-build-provenance@v2
+      #  with:
+      #    subject-name: ${{ env.REGISTRY }}/${{ env.IMAGEN_NAME }}
+      #    subject-digest:  ${{ steps.push.outputs.digest }}
+      #    push-to-registry: true
+
+
+      
