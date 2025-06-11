@@ -116,4 +116,22 @@
 		</plugins>
 	</build>
 
+    <repositories>
+		<repository>
+			<id>github-core</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/jossabdev/ms-core-sales-util</url>
+		</repository>
+		<repository>
+			<id>github-db</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/jossabdev/db-sales-system</url>
+		</repository>
+	</repositories>
+	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<url>https://maven.pkg.github.com/jossabdev/ms-comp-sales-system</url>
+		</repository>
+	</distributionManagement>
 </project>

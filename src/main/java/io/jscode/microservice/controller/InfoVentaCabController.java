@@ -1,12 +1,17 @@
 package io.jscode.microservice.controller;
 
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +27,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import io.jscode.db.entity.InfoVentaCab;
 import io.jscode.microservice.dto.ConsultaVentasDTO;
 import io.jscode.microservice.dto.ConsultaVentasReqDTO;
 import io.jscode.microservice.dto.EstadisticaVentaDTO;
@@ -51,6 +57,9 @@ public class InfoVentaCabController {
 	@Autowired
 	private BeanFactory factory;
 	
+	@Value("${sales.system.ventas.maximo-dias-consulta-ventas}")
+    private int maximoDiasConsultaVentas;
+
 	private String infoVentaCabServiceImpl = "InfoVentaCabServiceImpl";
 	private String gestionVentaServiceImpl = "GestionVentaServiceImpl";
 	
@@ -281,6 +290,33 @@ public class InfoVentaCabController {
 			log.error("InfoVentaCabController - obtenerTotalDeInversion: {}", e.getMessage());
 			e.printStackTrace();
 			throw new ResponseStatusException( HttpStatus.NOT_FOUND, e.getErrorMessage(), e);
+		}
+		return response;
+	}
+
+	/**
+	 *  Devuelve una lista de ventas default (ultimos 7 dias)
+	 * @return
+	 */
+	@GetMapping(path = "consultarListaDeVentasDefault", produces = MediaType.APPLICATION_JSON_VALUE)
+	@ResponseStatus(code = HttpStatus.OK)
+	public ResponseListGenerico<InfoVentaCabDTO> obtenerListaDeVentasDefault() {
+		ResponseListGenerico<InfoVentaCabDTO> response = new ResponseListGenerico<>();
+		infoVentaService = (InfoVentaCabServiceImpl) factory.getBean(infoVentaCabServiceImpl);
+		try {
+			ConsultaVentasReqDTO request = new ConsultaVentasReqDTO();
+			request.setFechaDesde(LocalDateTime.now().minusDays(maximoDiasConsultaVentas));
+			request.setFechaHasta(LocalDateTime.now());
+			List<InfoVentaCabDTO> listaVentasDefault = gestionVentaService.obtenerVentasPorRangoFecha(request)
+			            .stream()
+						.sorted(Comparator.comparing(InfoVentaCabDTO::getFechaVenta).reversed())
+						.collect(Collectors.toList());
+						
+			response.setData(listaVentasDefault);
+		} catch (ExcepcionGenerica e) {
+			log.error("InfoVentaCabController - obtenerListaDeVentasDefault: {}", e.getMessage());
+			e.printStackTrace();
+			throw new ResponseStatusException( HttpStatus.CONFLICT, e.getErrorMessage(), e);
 		}
 		return response;
 	}

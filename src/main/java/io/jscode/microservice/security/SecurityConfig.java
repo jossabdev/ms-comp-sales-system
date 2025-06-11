@@ -28,7 +28,7 @@ public class SecurityConfig {
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 		    .authorizeHttpRequests((httpRequest) -> httpRequest
 				   .requestMatchers(HttpMethod.POST, "/auth/login/**").permitAll()
-		    	   .requestMatchers(HttpMethod.GET, "/**","/ventas/obtenerTotalDeInversion", "/roles", "/productos/obtenerTodosLosProductosEnStock").hasAnyRole("Administrador", "Vendedor")
+		    	   .requestMatchers(HttpMethod.GET, "/**","/ventas/obtenerTotalDeInversion", "/roles", "/productos/obtenerTodosLosProductosEnStock", "/ventas/consultarListaDeVentasDefault").hasAnyRole("Administrador", "Vendedor")
 		    	   .requestMatchers(HttpMethod.POST, "/ventas/**", "/detalleVentas/**", "/*/consultarPor", "/productos/obtenerProductoEnStockPorCodigoBarras").hasAnyRole("Administrador", "Vendedor")
 		    	   .requestMatchers(HttpMethod.POST, "/inventarios/guardarInventario", "/categorias/guardarCategoria", "/productos/guardarProducto", "/ventas/anularVenta", "/usuarios/**", "/reportes/generarReporteVenta").hasRole("Administrador")
 		    	   .requestMatchers(HttpMethod.PUT, "/inventarios/actualizarInventario", "/categorias/actualizarCategoria", "/productos/actualizarProducto", "/ventas/actualizarVenta", "/detalleVentas/actualizarDetalleVenta", "/usuarios/actualizarUsuario").hasRole("Administrador")
