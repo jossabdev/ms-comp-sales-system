@@ -4,9 +4,9 @@ server.port=${port:1600}
 path.webservice=sales
 
 #Parametros de base postgres
-sales.system.datasource.jdbc-url=jdbc:postgresql://localhost:5433/db_sales_system?escapeSyntaxCallMode=callIfNoReturn
-sales.system.datasource.username=db_usr_admin
-sales.system.datasource.password=secret
+sales.system.datasource.jdbc-url=jdbc:postgresql://localhost:5432/db_sales_system?escapeSyntaxCallMode=callIfNoReturn
+sales.system.datasource.username=postgres
+sales.system.datasource.password=postgres
 spring.datasource.hikari.idle-timeout=300000
 spring.datasource.hikari.connection-timeout=60000
 spring.datasource.hikari.maximum-pool-size=200
